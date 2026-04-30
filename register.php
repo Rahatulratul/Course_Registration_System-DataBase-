@@ -1,23 +1,45 @@
 <?php
 require_once 'config.php';
+
+if (isset($_SESSION['user_id'])) {
+    header("Location: " . BASE_URL . $_SESSION['role'] . "/dashboard.php");
+    exit;
+}
+
+// Fetch departments
+$dept_stmt = $pdo->query("SELECT * FROM departments");
+$departments = $dept_stmt->fetchAll();
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $name = trim($_POST['name']);
     $email = trim($_POST['email']);
     $password = $_POST['password'];
     $confirm = $_POST['confirm_password'];
+    $department_id = $_POST['department_id'] ?? null;
+    $role = (isset($_POST['role']) && $_POST['role'] === 'teacher') ? 'teacher' : 'student';
 
     if ($password !== $confirm) {
         $_SESSION['flash_error'] = "Passwords do not match.";
+    } elseif (!$department_id) {
+        $_SESSION['flash_error'] = "Please select a department.";
     } else {
-        $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
-        $stmt->execute([$email]);
+        // Check if email exists in any table
+        $stmt = $pdo->prepare("
+            SELECT email FROM admins WHERE email = ?
+            UNION SELECT email FROM teachers WHERE email = ?
+            UNION SELECT email FROM students WHERE email = ?
+        ");
+        $stmt->execute([$email, $email, $email]);
         if ($stmt->fetch()) {
             $_SESSION['flash_error'] = "Email already mapped to an account.";
         } else {
-            $role = (isset($_POST['role']) && $_POST['role'] === 'teacher') ? 'teacher' : 'student';
             $hashed = password_hash($password, PASSWORD_DEFAULT);
-            $stmt = $pdo->prepare("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)");
-            if ($stmt->execute([$name, $email, $hashed, $role])) {
+            if ($role === 'teacher') {
+                $stmt = $pdo->prepare("INSERT INTO teachers (name, email, password, department_id) VALUES (?, ?, ?, ?)");
+            } else {
+                $stmt = $pdo->prepare("INSERT INTO students (name, email, password, department_id) VALUES (?, ?, ?, ?)");
+            }
+            if ($stmt->execute([$name, $email, $hashed, $department_id])) {
                 $_SESSION['flash_success'] = "Registration successful! You can now log in.";
                 header("Location: login.php");
                 exit;
@@ -81,6 +103,17 @@ body {
                     <select name="role" id="role-select" class="form-control" style="padding-left: 45px; cursor: pointer;" required>
                         <option value="student">Student</option>
                         <option value="teacher">Teacher</option>
+                    </select>
+                </div>
+            <div class="form-group">
+                <label>Department</label>
+                <div style="position: relative;">
+                    <i class="fa-solid fa-building" style="position: absolute; left: 16px; top: 16px; color: var(--text-muted);"></i>
+                    <select name="department_id" class="form-control" style="padding-left: 45px; cursor: pointer;" required>
+                        <option value="">Select Department</option>
+                        <?php foreach($departments as $dept): ?>
+                            <option value="<?= $dept->id ?>"><?= htmlspecialchars($dept->name) ?></option>
+                        <?php endforeach; ?>
                     </select>
                 </div>
             </div>
