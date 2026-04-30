@@ -2,9 +2,10 @@
 require_once '../config.php';
 require_role('admin');
 
-$usersCount = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
-$studentsCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'student'")->fetchColumn();
-$teachersCount = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'teacher'")->fetchColumn();
+$adminsCount = $pdo->query("SELECT COUNT(*) FROM admins")->fetchColumn();
+$studentsCount = $pdo->query("SELECT COUNT(*) FROM students")->fetchColumn();
+$teachersCount = $pdo->query("SELECT COUNT(*) FROM teachers")->fetchColumn();
+$usersCount = $adminsCount + $studentsCount + $teachersCount;
 $coursesCount = $pdo->query("SELECT COUNT(*) FROM courses")->fetchColumn();
 
 include '../include/header.php';
