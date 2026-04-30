@@ -31,8 +31,8 @@ if (isset($_GET['delete'])) {
     exit;
 }
 
-$courses = $pdo->query("SELECT c.*, u.name as faculty_name, (SELECT COUNT(*) FROM enrollments e WHERE e.course_id = c.id) as filled_seats FROM courses c LEFT JOIN users u ON c.faculty_id = u.id ORDER BY c.course_code ASC, c.section ASC")->fetchAll();
-$teachers = $pdo->query("SELECT id, name FROM users WHERE role = 'teacher' ORDER BY name ASC")->fetchAll();
+$courses = $pdo->query("SELECT c.*, t.name as faculty_name, (SELECT COUNT(*) FROM enrollments e WHERE e.course_id = c.id) as filled_seats FROM courses c LEFT JOIN teachers t ON c.faculty_id = t.teacher_id ORDER BY c.course_code ASC, c.section ASC")->fetchAll();
+$teachers = $pdo->query("SELECT teacher_id as id, name FROM teachers ORDER BY name ASC")->fetchAll();
 
 include '../include/header.php';
 ?>
@@ -118,3 +118,4 @@ include '../include/header.php';
     </table>
 </div>
 <?php include '../include/footer.php'; ?>
+
