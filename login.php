@@ -1,11 +1,23 @@
 <?php
 require_once 'config.php';
+
+if (isset($_SESSION['user_id'])) {
+    header("Location: " . BASE_URL . $_SESSION['role'] . "/dashboard.php");
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $email = trim($_POST['email']);
     $password = $_POST['password'];
 
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
-    $stmt->execute([$email]);
+    $stmt = $pdo->prepare("
+        SELECT id, name, email, password, 'admin' as role FROM admins WHERE email = ?
+        UNION
+        SELECT teacher_id as id, name, email, password, 'teacher' as role FROM teachers WHERE email = ?
+        UNION
+        SELECT student_id as id, name, email, password, 'student' as role FROM students WHERE email = ?
+    ");
+    $stmt->execute([$email, $email, $email]);
     $user = $stmt->fetch();
 
     if ($user && password_verify($password, $user->password)) {
@@ -16,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         header("Location: " . BASE_URL . $user->role . "/dashboard.php");
         exit;
     } else {
-        $_SESSION['flash_error'] = "Invalid credentials. Admin password defaults to 'admin'.";
+        $_SESSION['flash_error'] = "Invalid credentials.";
     }
 }
 include 'include/header.php';
